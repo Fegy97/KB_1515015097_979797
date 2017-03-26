@@ -1,0 +1,131 @@
+/*****************************************************************************
+
+		Copyright (c) 1984 - 2000 Prolog Development Center A/S
+
+ Project:  
+ FileName: CH04E12.PRO
+ Purpose: 
+ Written by: PDC
+ Modifyed by: Eugene Akimov
+ Comments: 
+******************************************************************************/
+%analisis ini untuk memenuhi tugas posttest4 pratikum kecerdasan buatan
+%FEGY ALTAMA
+%1515015097
+%************************************************************************************************************************************************************
+ %dari beberapa orang, prolog mencari beberapa kecurigaan
+    %cek orang yang pertama adalah bert
+    %lalu cek siapa yang terbunuh, dan yang terbunuh adalah susan
+    %pelaku bukanlah korban, terbukti korban tidak bunuh diri
+    %mengecek bert dari semua kecurigaan
+    %dari kecurigaan pertama, cek setiap orang yang memiliki barang yang bisa dijadikan bukti
+    %lalu saat di cek kecurigaan alat yang sesuai dengan barang bukti adalah tongkat, bert terindikasi mempunyai alat tersebut adalah wooden leg
+    %cek apakah ada bukti darah di badannya, dan ternyata bert dan susan ternodai darah, tapi karena pembunuh bukan yang terbunuh , maka bert lah pelakunya
+%************************************************************************************************************************************************************
+trace
+domains
+  name,sex,occupation,object,vice,substance = symbol
+  age=integer
+
+predicates
+  person(name,age,sex,occupation) - nondeterm (o,o,o,o), nondeterm (i,o,o,i), nondeterm (i,o,i,o)
+  had_affair(name,name) - nondeterm (i,i), nondeterm (i,o)
+  killed_with(name,object) - determ (i,o)
+  killed(name) - procedure (o)
+  killer(name) - nondeterm (o)
+  motive(vice) - nondeterm (i)
+  smeared_in(name,substance) - nondeterm (i,o), nondeterm (i,i)
+  owns(name,object) - nondeterm (i,i)
+  operates_identically(object,object) - nondeterm (o,i)
+  owns_probably(name,object) - nondeterm (i,i)
+  suspect(name) - nondeterm (i)
+
+/* * * Facts about the murder * * */
+clauses
+  person(bert,55,m,carpenter).
+  person(allan,25,m,football_player).
+  person(allan,25,m,butcher).
+  person(john,25,m,pickpocket).
+
+  had_affair(barbara,john).
+  had_affair(barbara,bert).
+  had_affair(susan,john).
+
+  killed_with(susan,club).
+  killed(susan).
+
+  motive(money).
+  motive(jealousy).
+  motive(righteousness).
+
+  smeared_in(bert,blood).
+  smeared_in(susan,blood).
+  smeared_in(allan,mud).
+  smeared_in(john,chocolate).
+  smeared_in(barbara,chocolate).
+
+  owns(bert,wooden_leg).
+  owns(john,pistol).
+
+/* * * Background knowledge * * */
+
+  operates_identically(wooden_leg, club).
+  operates_identically(bar, club).
+  operates_identically(pair_of_scissors, knife).
+  operates_identically(football_boot, club).
+
+  owns_probably(X,football_boot):-
+	person(X,_,_,football_player).
+  owns_probably(X,pair_of_scissors):-
+	person(X,_,_,hairdresser).
+  owns_probably(X,Object):-
+	owns(X,Object).
+
+/* * * * * * * * * * * * * * * * * * * * * * *
+ * Suspect all those who own a weapon with   *
+ * which Susan could have been killed.       *
+ * * * * * * * * * * * * * * * * * * * * * * */
+
+  suspect(X):-
+	killed_with(susan,Weapon) ,
+	operates_identically(Object,Weapon) ,
+	owns_probably(X,Object).
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Suspect men who have had an affair with Susan.  *
+ * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+  suspect(X):-
+	motive(jealousy),
+	person(X,_,m,_),
+	had_affair(susan,X).
+
+/* * * * * * * * * * * * * * * * * * * * *
+ * Suspect females who have had an       *
+ * affair with someone that Susan knew.  *
+ * * * * * * * * * * * * * * * * * * * * */
+
+  suspect(X):-
+	motive(jealousy),
+	person(X,_,f,_),
+	had_affair(X,Man),
+	had_affair(susan,Man).
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Suspect pickpockets whose motive could be money.  *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+  suspect(X):-
+	motive(money),
+	person(X,_,_,pickpocket).
+
+  killer(Killer):- %kode ini akan melacak data-data yang sesuai dengan goal2, hasil yang akan didapatkan akan tersimpan di variabel Killer
+	person(Killer,_,_,_), %panggil subgoal pertama lalu cek orang(Pembunuh,_,_,_),
+	killed(Killed), %lalu cek siapa yang terbunuh dan hasilnya adalah susan yang terbunuh
+	Killed <> Killer, /* It is not a suicide */ %pernyataan susan tidak bunuh diri
+	suspect(Killer), %dan orang-orang yang di panggil dari syarat pertama di cek melalui kecurigaan yang ada di clause di atas
+	smeared_in(Killer,Goo),%mengecek bukti apakah yang di curigai ada noda darah
+	smeared_in(Killed,Goo).
+
+goal
+  killer(X).
